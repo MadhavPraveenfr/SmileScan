@@ -14,7 +14,7 @@ import {
     Database,
     Bookmark,
     ExternalLink,
-    PhoneCall,
+    MessageSquare,
     CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -382,11 +382,13 @@ function LeadRow({ lead }: { lead: Lead }) {
                 <div className="inline-flex items-center gap-1.5">
                     {lead.booking && (
                         <a
-                            href={`tel:${lead.booking.phone.replace(/\s/g, '')}`}
+                            href={`sms:${lead.booking.phone.replace(/\s/g, '')}?body=${encodeURIComponent(
+                                `Hi ${lead.booking.name.split(' ')[0]}, this is Carestack Dental. We received your recent screening report and would like to help you schedule a consultation. When would be a good time to talk?`
+                            )}`}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-regal text-white text-xs font-medium hover:bg-regal/90"
                         >
-                            <PhoneCall className="w-3.5 h-3.5" />
-                            Call
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            Send SMS
                         </a>
                     )}
                     <a
