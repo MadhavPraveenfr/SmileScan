@@ -1,0 +1,40 @@
+### Screening pipeline test
+POST http://localhost:3000/api/screen
+Content-Type: multipart/form-data; boundary=----BoundaryXYZ
+
+------BoundaryXYZ
+Content-Disposition: form-data; name="front-smile"; filename="front-smile.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images/front-smile.jpg
+------BoundaryXYZ
+Content-Disposition: form-data; name="upper-arch"; filename="upper-arch.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images/upper-arch.jpg
+------BoundaryXYZ
+Content-Disposition: form-data; name="lower-arch"; filename="lower-arch.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images/lower-arch.jpg
+------BoundaryXYZ
+Content-Disposition: form-data; name="left-bite"; filename="left-bite.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images/left-bite.jpg
+------BoundaryXYZ
+Content-Disposition: form-data; name="right-bite"; filename="right-bite.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images/right-bite.jpg
+------BoundaryXYZ
+Content-Disposition: form-data; name="email"
+
+
+### Fetch report by ID
+
+### Fetch report by ID (fresh copy)
+GET http://127.0.0.1:3000/api/report/0dd46b91-d664-4195-95ce-a8f91d48ccd3
+
+test@example.com
+------BoundaryXYZ--
