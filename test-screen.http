@@ -1,5 +1,17 @@
-### Screening pipeline test
-POST http://localhost:3000/api/screen
+### ============================================
+### 1. Health Check — Supabase + Agnes
+### ============================================
+
+GET http://127.0.0.1:3000/api/health
+
+
+### ============================================
+### 2. Screening Pipeline — analyze 5 photos
+### ============================================
+### First run: CACHE MISS x5, ~30s
+### Second run: CACHE HIT x5, ~2s
+
+POST http://127.0.0.1:3000/api/screen
 Content-Type: multipart/form-data; boundary=----BoundaryXYZ
 
 ------BoundaryXYZ
@@ -30,11 +42,134 @@ Content-Type: image/jpeg
 ------BoundaryXYZ
 Content-Disposition: form-data; name="email"
 
-
-### Fetch report by ID
-
-### Fetch report by ID (fresh copy)
-GET http://127.0.0.1:3000/api/report/0dd46b91-d664-4195-95ce-a8f91d48ccd3
-
 test@example.com
 ------BoundaryXYZ--
+
+
+### ============================================
+### 3. Fetch Report by Assessment ID
+### ============================================
+### Uses a real UUID from previous runs
+
+GET http://127.0.0.1:3000/api/report/0dd46b91-d664-4195-95ce-a8f91d48ccd3
+
+
+### ============================================
+### 4. Fetch Report — Not Found (expect 404)
+### ============================================
+
+GET http://127.0.0.1:3000/api/report/00000000-0000-0000-0000-000000000000
+
+
+### ============================================
+### 5. Fetch Report — Malformed ID (expect 400)
+### ============================================
+
+GET http://127.0.0.1:3000/api/report/not-a-uuid
+
+
+### ============================================
+### 6. Booking — Success (expect 200)
+### ============================================
+
+POST http://127.0.0.1:3000/api/book
+Content-Type: application/json
+
+{
+  "assessmentId": "0dd46b91-d664-4195-95ce-a8f91d48ccd3",
+  "name": "Priya Sharma",
+  "phone": "+91 9876543210",
+  "email": "priya@example.com",
+  "preferredClinic": "Carestack Dental - Koramangala",
+  "notes": "Free on weekday evenings"
+}
+
+
+### ============================================
+### 7. Booking — Missing Phone (expect 400)
+### ============================================
+
+POST http://127.0.0.1:3000/api/book
+Content-Type: application/json
+
+{
+  "assessmentId": "0dd46b91-d664-4195-95ce-a8f91d48ccd3",
+  "name": "Test Patient"
+}
+
+
+### ============================================
+### 8. Booking — Malformed ID (expect 400)
+### ============================================
+
+POST http://127.0.0.1:3000/api/book
+Content-Type: application/json
+
+{
+  "assessmentId": "not-a-uuid",
+  "name": "Test Patient",
+  "phone": "9876543210"
+}
+
+
+### ============================================
+### 9. Booking — Nonexistent Assessment (expect 404)
+### ============================================
+
+POST http://127.0.0.1:3000/api/book
+Content-Type: application/json
+
+{
+  "assessmentId": "00000000-0000-0000-0000-000000000000",
+  "name": "Test Patient",
+  "phone": "9876543210"
+}
+
+
+### ============================================
+### 10. Metrics — Pitch Analytics
+### ============================================
+
+GET http://127.0.0.1:3000/api/metrics
+
+### ============================================
+### 11. Fresh Test — new photos, new people
+### ============================================
+
+POST http://127.0.0.1:3000/api/screen
+Content-Type: multipart/form-data; boundary=----BoundaryFresh
+
+------BoundaryFresh
+Content-Disposition: form-data; name="front-smile"; filename="p2-front.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images-2/p2-front.jpg
+------BoundaryFresh
+Content-Disposition: form-data; name="upper-arch"; filename="p2-upper.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images-2/p2-upper.jpg
+------BoundaryFresh
+Content-Disposition: form-data; name="lower-arch"; filename="p2-lower.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images-2/p2-lower.jpg
+------BoundaryFresh
+Content-Disposition: form-data; name="left-bite"; filename="p2-left.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images-2/p2-left.jpg
+------BoundaryFresh
+Content-Disposition: form-data; name="right-bite"; filename="p2-right.jpg"
+Content-Type: image/jpeg
+
+< E:/Drishti/test-images-2/p2-right.jpg
+------BoundaryFresh
+Content-Disposition: form-data; name="email"
+
+fresh@example.com
+------BoundaryFresh--
+
+
+### Leads list
+GET http://127.0.0.1:3000/api/leads?limit=20

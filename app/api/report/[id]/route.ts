@@ -11,9 +11,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
-    console.log(`[report] received id: "${id}" (length=${id.length})`);
 
-    // Basic UUID shape check — avoids a needless DB round-trip on garbage input
     const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRe.test(id)) {
         return NextResponse.json(
@@ -43,6 +41,25 @@ export async function GET(
         );
     }
 
+    // Fetch the storage paths for this assessment's photos
+    const { data: imageRows } = await supabase
+        .from('images')
+        .select('angle, storage_path')
+        .eq('assessment_id', id);
+
+    // Generate signed URLs (1 hour expiry)
+    const photos: { angle: string; url: string }[] = [];
+    if (imageRows?.length) {
+        for (const row of imageRows) {
+            const { data: signed } = await supabase.storage
+                .from('oral-scans')
+                .createSignedUrl(row.storage_path, 3600);
+            if (signed?.signedUrl) {
+                photos.push({ angle: row.angle, url: signed.signedUrl });
+            }
+        }
+    }
+
     return NextResponse.json({
         assessmentId: data.id,
         email: data.user_email,
@@ -54,5 +71,6 @@ export async function GET(
         disclaimer: data.report_json?.disclaimer ?? null,
         imagesAnalyzed: data.report_json?.images_analyzed ?? 0,
         imagesSkipped: data.report_json?.images_skipped ?? 0,
+        photos,
     });
 }

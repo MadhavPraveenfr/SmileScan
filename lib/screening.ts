@@ -145,9 +145,10 @@ const CONCERN_KEYWORDS = ['bleeding', 'swelling', 'receding', 'exposed'];
 /**
  * Applies safety rules and produces a final report.
  * Rule summary:
- *  - Any 'severe' finding, or 'dark_spot' at moderate+, or any finding with confidence >= 0.85 → triage "soon"
- *  - 2+ severe findings, or an urgent keyword in any evidence → triage "urgent"
- *  - Otherwise → triage "routine"
+ *  - 2+ severe findings, or an acute keyword (abscess, pus, severe pain, trauma, facial swelling) → "urgent"
+ *  - 1 severe finding, OR confidence >= 0.85, OR moderate+ dark spot,
+ *    OR a concern keyword (bleeding, swelling, receding, exposed) on a non-mild finding → "soon"
+ *  - Otherwise → "routine"
  */
 export function buildReport(
   aggregated: AggregatedFinding[],
@@ -175,8 +176,12 @@ export function buildReport(
     triage = 'urgent';
     alert =
       'If you are experiencing pain, bleeding, or swelling, please seek immediate dental care.';
-  } else if (severeCount >= 1 || hasHighConfidence || hasModerateDarkSpot || hasConcernKeyword) {
-  } else if (severeCount >= 1 || hasHighConfidence || hasModerateDarkSpot) {
+  } else if (
+    severeCount >= 1 ||
+    hasHighConfidence ||
+    hasModerateDarkSpot ||
+    hasConcernKeyword
+  ) {
     triage = 'soon';
   }
 
@@ -198,14 +203,35 @@ function generateSummary(findings: AggregatedFinding[], triage: string): string 
     return 'No obvious visible concerns were detected in the images provided. Keep up regular brushing, flossing, and routine dental check-ups.';
   }
 
-  const types = Array.from(new Set(findings.map((f) => f.type.replace(/_/g, ' '))));
-  const firstFew = types.slice(0, 3).join(', ');
+  const rawTypes = Array.from(new Set(findings.map((f) => f.type)));
+  const firstFew = rawTypes
+    .slice(0, 3)
+    .map((t) => t.replace(/_/g, ' '))
+    .join(', ');
 
   if (triage === 'urgent') {
     return `The screening detected signs that may need prompt attention, including ${firstFew}. Please consider consulting a dentist soon.`;
   }
+
   if (triage === 'soon') {
     return `The screening detected visible signs such as ${firstFew} that may benefit from a dentist's evaluation. Booking a routine consultation is recommended.`;
   }
-  return `The screening detected minor visible signs (${firstFew}). These are typically addressed with routine care and good oral hygiene.`;
+
+  // Routine: tailor the advice to what was actually found.
+  // Hygiene-related findings (staining, deposits, gum inflammation) can often
+  // be managed with home care. Structural findings (crowding, wear, chips,
+  // spacing, missing teeth) usually need a professional opinion.
+  const HYGIENE_TYPES = new Set([
+    'discoloration',
+    'plaque',
+    'tartar',
+    'gum_inflammation',
+  ]);
+  const allHygiene = rawTypes.every((t) => HYGIENE_TYPES.has(t));
+
+  if (allHygiene) {
+    return `The screening detected minor visible signs (${firstFew}). These are typically addressed with routine care and good oral hygiene.`;
+  }
+
+  return `The screening detected minor visible signs (${firstFew}). A routine dental check-up is the best next step to keep an eye on these.`;
 }

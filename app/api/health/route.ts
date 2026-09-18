@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI } from '@google/genai';
 
 export async function GET() {
   const checks: Record<string, string> = {};
 
-  // Check Supabase
+  // Supabase
   try {
     const supabase = createClient(
       process.env.SUPABASE_URL!,
@@ -17,16 +16,30 @@ export async function GET() {
     checks.supabase = `failed: ${(e as Error).message}`;
   }
 
-  // Check Gemini (new SDK)
+  // Agnes AI — send a trivial prompt to confirm the key works
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: 'Reply with exactly: ok',
-    });
-    checks.gemini = response.text?.trim() ?? 'no response text';
+    const response = await fetch(
+      'https://apihub.agnes-ai.com/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.AGNES_API_KEY!}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'agnes-2.5-flash',
+          messages: [{ role: 'user', content: 'Reply with exactly: ok' }],
+        }),
+      }
+    );
+    if (!response.ok) {
+      checks.agnes = `failed: HTTP ${response.status}`;
+    } else {
+      const json = await response.json();
+      checks.agnes = json.choices?.[0]?.message?.content?.trim() ?? 'ok';
+    }
   } catch (e) {
-    checks.gemini = `failed: ${(e as Error).message}`;
+    checks.agnes = `failed: ${(e as Error).message}`;
   }
 
   return NextResponse.json(checks);
