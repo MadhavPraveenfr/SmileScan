@@ -35,6 +35,7 @@ export interface Report {
     imagesSkipped: number;
     skippedAngles?: string[];
     photos?: ReportPhoto[];
+    photosDeleted?: boolean;
     email?: string | null;   // ← add this
 }
 

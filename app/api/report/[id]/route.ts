@@ -47,10 +47,16 @@ export async function GET(
         .select('angle, storage_path')
         .eq('assessment_id', id);
 
-    // Generate signed URLs (1 hour expiry)
     const photos: { angle: string; url: string }[] = [];
+    let photosDeleted = false;
+
     if (imageRows?.length) {
         for (const row of imageRows) {
+            // Skip rows that have been purged
+            if (!row.storage_path) {
+                photosDeleted = true;
+                continue;
+            }
             const { data: signed } = await supabase.storage
                 .from('oral-scans')
                 .createSignedUrl(row.storage_path, 3600);
@@ -72,5 +78,6 @@ export async function GET(
         imagesAnalyzed: data.report_json?.images_analyzed ?? 0,
         imagesSkipped: data.report_json?.images_skipped ?? 0,
         photos,
+        photosDeleted,
     });
 }

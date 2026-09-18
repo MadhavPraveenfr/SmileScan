@@ -15,6 +15,8 @@ import {
     Sparkles,
     Calendar,
     CheckCircle2,
+    Trash2,
+    ShieldCheck,
 } from 'lucide-react';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -25,10 +27,13 @@ export default function ReportPage() {
     const storeReport = useScanStore((s) => s.report);
     const setReport = useScanStore((s) => s.setReport);
 
+
     const [state, setState] = useState<LoadState>('loading');
     const [error, setError] = useState<string | null>(null);
     const [report, setLocalReport] = useState<Report | null>(null);
     const [hoveredFinding, setHoveredFinding] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [photosDeleted, setPhotosDeleted] = useState(false);
 
     const id = params?.id;
 
@@ -43,6 +48,7 @@ export default function ReportPage() {
             (storeReport.photos?.length ?? 0) > 0
         ) {
             setLocalReport(storeReport);
+            setPhotosDeleted(storeReport.photosDeleted === true);
             setState('ready');
             return;
         }
@@ -69,6 +75,7 @@ export default function ReportPage() {
                 if (!cancelled) {
                     setLocalReport(r);
                     setReport(r);
+                    setPhotosDeleted(r.photosDeleted === true);
                     setState('ready');
                 }
             } catch (e) {
@@ -83,6 +90,33 @@ export default function ReportPage() {
             cancelled = true;
         };
     }, [id, storeReport, setReport]);
+
+    const handleDeletePhotos = async () => {
+        if (
+            !confirm(
+                'Delete your photos? Your report stays available, but the images will be permanently removed.'
+            )
+        ) {
+            return;
+        }
+        setDeleting(true);
+        try {
+            const res = await fetch(`/api/report/${id}/purge`, { method: 'POST' });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data?.error || `Failed (${res.status})`);
+            }
+            setPhotosDeleted(true);
+            // Clear photos from local report so the gallery unmounts immediately
+            if (report) {
+                setLocalReport({ ...report, photos: [] });
+            }
+        } catch (e) {
+            alert((e as Error).message);
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     if (state === 'loading') return <LoadingView />;
     if (state === 'error' || !report) return <ErrorView message={error} />;
@@ -158,7 +192,7 @@ export default function ReportPage() {
                 </div>
 
                 {/* Photo gallery */}
-                {hasPhotos && (
+                {hasPhotos && !photosDeleted && (
                     <div className="mt-8">
                         <div className="flex items-baseline justify-between mb-4">
                             <h2 className="text-lg font-semibold text-ink">Your photos</h2>
@@ -170,9 +204,48 @@ export default function ReportPage() {
                             highlightedFindingKey={hoveredFinding}
                         />
                         <p className="text-xs text-muted mt-3">
-                            Boxes outline areas where visible signs were detected. Colour
-                            intensity indicates severity.
+                            Boxes outline areas where visible signs were detected.
                         </p>
+
+                        {/* Privacy controls */}
+                        <div className="mt-5 p-4 rounded-[var(--radius-card)] bg-canvas border border-border">
+                            <div className="flex items-start gap-3">
+                                <ShieldCheck className="w-4 h-4 text-emerald shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="text-sm text-ink font-medium">
+                                        Your photos, your control
+                                    </p>
+                                    <p className="text-xs text-muted mt-1 leading-relaxed">
+                                        Photos are automatically deleted after 24 hours if you
+                                        don&apos;t request a consultation. You can delete them
+                                        right now — your report stays available.
+                                    </p>
+                                    <button
+                                        onClick={handleDeletePhotos}
+                                        disabled={deleting}
+                                        className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-coral hover:underline disabled:opacity-50"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        {deleting ? 'Deleting…' : 'Delete my photos now'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {photosDeleted && (
+                    <div className="mt-8 p-4 rounded-[var(--radius-card)] bg-emerald-soft border border-emerald/20">
+                        <div className="flex items-start gap-3">
+                            <ShieldCheck className="w-4 h-4 text-emerald shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm text-ink font-medium">Photos deleted</p>
+                                <p className="text-xs text-muted mt-1 leading-relaxed">
+                                    Your photos have been removed. Your report remains available
+                                    below.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
 
