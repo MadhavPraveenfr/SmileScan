@@ -8,6 +8,7 @@ import {
   Clock,
   ChevronRight,
   Camera,
+  LayoutDashboard,
 } from 'lucide-react';
 
 export default function Home() {
@@ -25,9 +26,19 @@ export default function Home() {
               SmileScan <span className="text-muted font-normal">by Carestack</span>
             </span>
           </div>
-          <span className="text-xs text-muted hidden sm:block">
-            Free · No sign-up
-          </span>
+
+          <div className="flex items-center gap-5">
+            <span className="text-xs text-muted hidden sm:block">
+              Free · No sign-up
+            </span>
+            <button
+              onClick={() => router.push('/metrics')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-ink hover:bg-canvas transition-colors"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              For clinics
+            </button>
+          </div>
         </div>
       </header>
 
